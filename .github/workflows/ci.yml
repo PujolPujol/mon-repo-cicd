@@ -1,4 +1,4 @@
-name: Build multi-projets
+name: Build projets ciblés
 
 on:
   push:
@@ -7,14 +7,39 @@ on:
       - 'projet-b/**'
 
 jobs:
-  build:
+  detect-changes:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        project: [projet-a, projet-b]
+    outputs:
+      projet-a: ${{ steps.filter.outputs.projet-a }}
+      projet-b: ${{ steps.filter.outputs.projet-b }}
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build ${{ matrix.project }}
-        run: |
-          docker build -t test-${{ matrix.project }} ${{ matrix.project }}
+      - name: Check which project changed
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            projet-a:
+              - 'projet-a/**'
+            projet-b:
+              - 'projet-b/**'
+
+  build-projet-a:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.projet-a == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build projet-a
+        run: docker build -t test-projet-a projet-a
+
+  build-projet-b:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.projet-b == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build projet-b
+        run: docker build -t test-projet-b projet-b

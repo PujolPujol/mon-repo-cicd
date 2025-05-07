@@ -55,7 +55,7 @@ jobs:
           name: image-projet-a
 
       - name: Debug – Lister les fichiers
-          run: ls -R
+        run: ls -R
 
       - name: Load image projet-a
         run: docker load -i image-projet-a.tar

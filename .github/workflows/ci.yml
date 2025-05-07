@@ -1,4 +1,4 @@
-name: Build & Push ciblé
+name: Build & Push multi-projets séparés
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Check which project changed
+      - name: Détection des changements
         id: filter
         uses: dorny/paths-filter@v2
         with:
@@ -29,24 +29,35 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.projet-a == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      image-name: ${{ steps.build.outputs.image-name }}
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build projet-a
-        id: build
+      - name: Build image projet-a
         run: |
           IMAGE=docker.io/${{ secrets.DOCKER_USERNAME }}/projet-a
-          echo "image-name=$IMAGE" >> $GITHUB_OUTPUT
           docker build -t $IMAGE projet-a
+          docker save $IMAGE > image-projet-a.tar
+
+      - name: Upload Docker image (projet-a)
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-projet-a
+          path: image-projet-a.tar
 
   push-projet-a:
     needs: build-projet-a
-    runs-on: ubuntu-latest
     if: needs.detect-changes.outputs.projet-a == 'true'
+    runs-on: ubuntu-latest
     steps:
-      - name: Log in to Docker Hub
+      - name: Download Docker image (projet-a)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-projet-a
+
+      - name: Load image projet-a
+        run: docker load -i image-projet-a.tar
+
+      - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Push image projet-a
@@ -58,24 +69,35 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.projet-b == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      image-name: ${{ steps.build.outputs.image-name }}
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build projet-b
-        id: build
+      - name: Build image projet-b
         run: |
           IMAGE=docker.io/${{ secrets.DOCKER_USERNAME }}/projet-b
-          echo "image-name=$IMAGE" >> $GITHUB_OUTPUT
           docker build -t $IMAGE projet-b
+          docker save $IMAGE > image-projet-b.tar
+
+      - name: Upload Docker image (projet-b)
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-projet-b
+          path: image-projet-b.tar
 
   push-projet-b:
     needs: build-projet-b
-    runs-on: ubuntu-latest
     if: needs.detect-changes.outputs.projet-b == 'true'
+    runs-on: ubuntu-latest
     steps:
-      - name: Log in to Docker Hub
+      - name: Download Docker image (projet-b)
+        uses: actions/download-artifact@v4
+        with:
+          name: image-projet-b
+
+      - name: Load image projet-b
+        run: docker load -i image-projet-b.tar
+
+      - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Push image projet-b

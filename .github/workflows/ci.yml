@@ -58,7 +58,7 @@ jobs:
           run: ls -R
 
       - name: Load image projet-a
-        run: docker load -i image-projet-a/image-projet-a.tar
+        run: docker load -i image-projet-a.tar
 
       - name: Re-tag image
         run: |
@@ -104,7 +104,7 @@ jobs:
           name: image-projet-b
 
       - name: Load image projet-b
-        run: docker load -i image-projet-b/image-projet-b.tar
+        run: docker load -i image-projet-b.tar
 
       - name: Re-tag image
         run: |

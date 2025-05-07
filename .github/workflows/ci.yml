@@ -1,4 +1,4 @@
-name: Build projets ciblés
+name: Build & Push ciblé
 
 on:
   push:
@@ -12,7 +12,6 @@ jobs:
     outputs:
       projet-a: ${{ steps.filter.outputs.projet-a }}
       projet-b: ${{ steps.filter.outputs.projet-b }}
-
     steps:
       - uses: actions/checkout@v3
 
@@ -30,16 +29,56 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.projet-a == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      image-name: ${{ steps.build.outputs.image-name }}
     steps:
       - uses: actions/checkout@v3
+
       - name: Build projet-a
-        run: docker build -t test-projet-a projet-a
+        id: build
+        run: |
+          IMAGE=docker.io/${{ secrets.DOCKER_USERNAME }}/projet-a
+          echo "image-name=$IMAGE" >> $GITHUB_OUTPUT
+          docker build -t $IMAGE projet-a
+
+  push-projet-a:
+    needs: build-projet-a
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.projet-a == 'true'
+    steps:
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push image projet-a
+        run: |
+          IMAGE=docker.io/${{ secrets.DOCKER_USERNAME }}/projet-a
+          docker push $IMAGE
 
   build-projet-b:
     needs: detect-changes
     if: needs.detect-changes.outputs.projet-b == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      image-name: ${{ steps.build.outputs.image-name }}
     steps:
       - uses: actions/checkout@v3
+
       - name: Build projet-b
-        run: docker build -t test-projet-b projet-b
+        id: build
+        run: |
+          IMAGE=docker.io/${{ secrets.DOCKER_USERNAME }}/projet-b
+          echo "image-name=$IMAGE" >> $GITHUB_OUTPUT
+          docker build -t $IMAGE projet-b
+
+  push-projet-b:
+    needs: build-projet-b
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.projet-b == 'true'
+    steps:
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push image projet-b
+        run: |
+          IMAGE=docker.io/${{ secrets.DOCKER_USERNAME }}/projet-b
+          docker push $IMAGE

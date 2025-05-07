@@ -1,0 +1,20 @@
+name: Build multi-projets
+
+on:
+  push:
+    paths:
+      - 'projet-a/**'
+      - 'projet-b/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [projet-a, projet-b]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build ${{ matrix.project }}
+        run: |
+          docker build -t test-${{ matrix.project }} ${{ matrix.project }}
